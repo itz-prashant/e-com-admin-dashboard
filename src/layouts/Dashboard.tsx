@@ -23,37 +23,44 @@ import GiftIcon from "../components/icons/GiftIcon";
 import { useMutation } from "@tanstack/react-query";
 import { logoutUser } from "../http/api";
 
-const items = [
-  {
-    key: "/",
-    icon: <Icon component={Home} />,
-    label: <NavLink to={"/"}>Home</NavLink>,
-  },
-  {
-    key: "/users",
-    icon: <Icon component={UserIcon} />,
-    label: <NavLink to={"/users"}>Users</NavLink>,
-  },
-  {
-    key: "/restaurants",
-    icon: <Icon component={FoodIcon} />,
-    label: <NavLink to={"/restaurants"}>Restaurants</NavLink>,
-  },
-  {
-    key: "/products",
-    icon: <Icon component={BasketIcon} />,
-    label: <NavLink to={"/products"}>Products</NavLink>,
-  },
-  {
-    key: "/promos",
-    icon: <Icon component={GiftIcon} />,
-    label: <NavLink to={"/promos"}>Promos</NavLink>,
-  },
-];
+const getMenuItems = (role: string) => {
+  const baseItems = [
+    {
+      key: "/",
+      icon: <Icon component={Home} />,
+      label: <NavLink to={"/"}>Home</NavLink>,
+    },
+    {
+      key: "/restaurants",
+      icon: <Icon component={FoodIcon} />,
+      label: <NavLink to={"/restaurants"}>Restaurants</NavLink>,
+    },
+    {
+      key: "/products",
+      icon: <Icon component={BasketIcon} />,
+      label: <NavLink to={"/products"}>Products</NavLink>,
+    },
+    {
+      key: "/promos",
+      icon: <Icon component={GiftIcon} />,
+      label: <NavLink to={"/promos"}>Promos</NavLink>,
+    },
+  ];
+
+  if (role === "admin") {
+    const menus = [...baseItems]
+
+    menus.splice(1,0,{
+        key: "/users",
+        icon: <Icon component={UserIcon} />,
+        label: <NavLink to={"/users"}>Users</NavLink>,
+      })
+        return menus
+  }
+};
 
 const Dashboard = () => {
-  const { logout } = useAuthStore();
-  const { user } = useAuthStore();
+  const { logout, user } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
 
   const { mutate: logoutMutate } = useMutation({
@@ -72,6 +79,8 @@ const Dashboard = () => {
   if (user === null) {
     return <Navigate to={"/auth/login"} replace={true} />;
   }
+
+   const items = getMenuItems(user.role);
 
   const currentYear = new Date().getFullYear();
 
@@ -103,7 +112,10 @@ const Dashboard = () => {
             }}
           >
             <Flex gap="medium" align="start" justify="space-between">
-              <Badge text={user.role === "admin" ? "Admin" : user.tenant.name} status="success" />
+              <Badge
+                text={user.role === "admin" ? "Admin" : user.tenant.name}
+                status="success"
+              />
               <Space size={16}>
                 <Badge dot={true}>
                   <BellFilled />
@@ -114,7 +126,7 @@ const Dashboard = () => {
                       {
                         key: "logout",
                         label: "Logout",
-                        onClick: ()=> logoutMutate()
+                        onClick: () => logoutMutate(),
                       },
                     ],
                   }}
