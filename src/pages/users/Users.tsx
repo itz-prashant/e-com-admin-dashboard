@@ -1,11 +1,13 @@
-import { Breadcrumb, Space, Table } from "antd";
-import { RightOutlined } from "@ant-design/icons";
+import { Breadcrumb, Button, Drawer, Space, Table } from "antd";
+import { RightOutlined, PlusOutlined } from "@ant-design/icons";
 import { Link, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getUsers } from "../../http/api";
 import type { User } from "../../types";
 import { useAuthStore } from "../../store";
 import UserFilter from "./UserFilter";
+import { useState } from "react";
+
 
 const columns = [
   {
@@ -35,22 +37,24 @@ const columns = [
     dataIndex: "role",
     key: "role",
   },
-//   {
-//     title: "Action",
-//     dataIndex: "action",
-//     key: "action",
-//     render: () => {
-//       return (
-//         <div>
-//           <Link to={"/users/edit"}>Edit</Link>
-//         </div>
-//       );
-//     },
-//   },
+  //   {
+  //     title: "Action",
+  //     dataIndex: "action",
+  //     key: "action",
+  //     render: () => {
+  //       return (
+  //         <div>
+  //           <Link to={"/users/edit"}>Edit</Link>
+  //         </div>
+  //       );
+  //     },
+  //   },
 ];
 
 const Users = () => {
-  const {user} = useAuthStore()  
+  const { user } = useAuthStore();
+
+  const [drawerOpen,setDrawerOpen] =  useState(false)
 
   const {
     data: getUser,
@@ -64,27 +68,51 @@ const Users = () => {
     },
   });
 
-
-  if(user.role !== "admin"){
-    return <Navigate to="/" replace={true}/>
+  if (user.role !== "admin") {
+    return <Navigate to="/" replace={true} />;
   }
 
   return (
     <>
-      <Space style={{width: "100%"}} size={"large"} vertical>
+      <Space style={{ width: "100%" }} size={"large"} vertical>
         <Breadcrumb
-        separator={<RightOutlined />}
-        items={[{ title: <Link to={"/"}>Dashboard</Link> }, { title: "Users" }]}
-      />
-      {isLoading && <div>Loading....</div>}
-      {isError && <div>{error.message}</div>}
+          separator={<RightOutlined />}
+          items={[
+            { title: <Link to={"/"}>Dashboard</Link> },
+            { title: "Users" },
+          ]}
+        />
+        {isLoading && <div>Loading....</div>}
+        {isError && <div>{error.message}</div>}
 
-      <UserFilter onFilterChange={(filterName, filterValue)=>{
-        console.log("fn", filterName)
-        console.log("fv", filterValue)
-      }}/>
+        <UserFilter
+          onFilterChange={(filterName, filterValue) => {
+            console.log("fn", filterName);
+            console.log("fv", filterValue);
+          }}
+        >
+          <Button onClick={()=> setDrawerOpen(true)} type="primary" icon={<PlusOutlined />}>
+            Add user
+          </Button>
+        </UserFilter>
 
-      <Table dataSource={getUser} columns={columns} rowKey={"id"}/>
+        <Table dataSource={getUser} columns={columns} rowKey={"id"} />
+
+        <Drawer
+          title="Create user"
+          size={720}
+          destroyOnHidden={true}
+          open={drawerOpen}
+          onClose={() => {setDrawerOpen(false)}}
+          extra={
+            <Space>
+              <Button>Cancel</Button>
+              <Button type="primary">Submit</Button>
+            </Space>
+          }
+        >
+          <p></p>
+        </Drawer>
       </Space>
     </>
   );
