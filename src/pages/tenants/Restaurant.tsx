@@ -47,7 +47,7 @@ const Tenants = () => {
 
   return (
     <>
-      <Space direction="vertical" size="large" style={{ width: "100%" }}>
+      <Space vertical size="large" style={{ width: "100%" }}>
         <Breadcrumb
           separator={<RightOutlined />}
           items={[
@@ -76,8 +76,8 @@ const Tenants = () => {
 
         <Drawer
           title="Create restaurant"
-          width={720}
-          destroyOnClose={true}
+          size={720}
+          destroyOnHidden={true}
           open={drawerOpen}
           onClose={() => {
             setDrawerOpen(false);
