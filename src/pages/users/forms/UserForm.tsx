@@ -57,7 +57,7 @@ const UserForm = () => {
           <Card title="Security info">
             <Row gutter={20}>
               <Col span={12}>
-                <Form.Item label="Password" name="passsword" rules={[
+                <Form.Item label="Password" name="password" rules={[
                     {
                         required: true,
                         message: "Password is required"
@@ -86,7 +86,7 @@ const UserForm = () => {
                     style={{ width: "100%" }}
                     options={[
                       { value: "admin", label: "Admin" },
-                      { value: "user", label: "Manager" },
+                      { value: "manager", label: "Manager" },
                       { value: "customer", label: "Customer" },
                     ]}
                   />
@@ -99,7 +99,7 @@ const UserForm = () => {
                         message: "Restaurant is required"
                     }
                 ]}>
-                  <Select
+                 {tenants && <Select
                     size="large"
                     onChange={() => {}}
                     allowClear={true}
@@ -109,7 +109,7 @@ const UserForm = () => {
                       label: tenant.name,
                       value: tenant.id,
                     }))}
-                  />
+                  />}
                 </Form.Item>
               </Col>
             </Row>
