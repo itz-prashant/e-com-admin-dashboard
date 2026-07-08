@@ -26,9 +26,11 @@ import { createUser, getUsers } from "../../http/api";
 import type { CreateUserData, FieldData, User } from "../../types";
 import { useAuthStore } from "../../store";
 import UserFilter from "./UserFilter";
-import { useState } from "react";
+import React, { useState } from "react";
 import UserForm from "./forms/UserForm";
 import { PER_PAGE } from "../../constants";
+import { debounce } from "lodash";
+
 
 const columns = [
   {
@@ -78,7 +80,7 @@ const Users = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [form] = Form.useForm();
 
-  const [filterForm] = Form.useForm()
+  const [filterForm] = Form.useForm();
   const [queryParams, setQueryParams] = useState({
     perPage: PER_PAGE,
     currentPage: 1,
@@ -96,7 +98,9 @@ const Users = () => {
   } = useQuery({
     queryKey: ["users", queryParams],
     queryFn: () => {
-      const filterParams = Object.fromEntries(Object.entries(queryParams).filter((item)=> !!item[1]))
+      const filterParams = Object.fromEntries(
+        Object.entries(queryParams).filter((item) => !!item[1])
+      );
       const queryString = new URLSearchParams(
         filterParams as unknown as Record<string, string>
       ).toString();
@@ -115,7 +119,6 @@ const Users = () => {
     },
   });
 
-
   const onHandleSubmit = async () => {
     await form.validateFields();
     userMutate(form.getFieldsValue());
@@ -123,16 +126,31 @@ const Users = () => {
     setDrawerOpen(false);
   };
 
-  const onFilterChange = async (changedFields: FieldData[])=>{
-    const chanedFilterFileds = changedFields.map((item)=> ({
-       [item.name[0]]: item.value
-    })).reduce((acc,item)=> ({...acc, ...item}),{})
+  const debounceQUpdate = React.useMemo(() => {
+    return debounce((value: string | undefined) => {
+      setQueryParams((prev) => ({
+        ...prev,
+        q: value,
+      }));
+    }, 1000);
+  }, []);
 
-    setQueryParams((prev)=>({
-      ...prev,
-      ...chanedFilterFileds
-    }))
-  }
+  const onFilterChange = async (changedFields: FieldData[]) => {
+    const chanedFilterFileds = changedFields
+      .map((item) => ({
+        [item.name[0]]: item.value,
+      }))
+      .reduce((acc, item) => ({ ...acc, ...item }), {});
+
+    if ("q" in chanedFilterFileds) {
+      debounceQUpdate(chanedFilterFileds.q)
+    } else {
+      setQueryParams((prev) => ({
+        ...prev,
+        ...chanedFilterFileds,
+      }));
+    }
+  };
 
   if (user.role !== "admin") {
     return <Navigate to="/" replace={true} />;
