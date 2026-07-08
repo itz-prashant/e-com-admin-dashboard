@@ -1,7 +1,27 @@
-import { Breadcrumb, Button, Drawer, Form, Space, Table, theme } from "antd";
-import { RightOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  Breadcrumb,
+  Button,
+  Drawer,
+  Flex,
+  Form,
+  Space,
+  Spin,
+  Table,
+  theme,
+  Typography,
+} from "antd";
+import {
+  RightOutlined,
+  PlusOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 import { Link, Navigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { createUser, getUsers } from "../../http/api";
 import type { CreateUserData, User } from "../../types";
 import { useAuthStore } from "../../store";
@@ -68,17 +88,19 @@ const Users = () => {
 
   const {
     data: getUser,
-    isLoading,
+    isFetching,
     isError,
     error,
   } = useQuery({
     queryKey: ["users", queryParams],
     queryFn: () => {
-
-      const queryString = new URLSearchParams(queryParams as unknown as Record<string,string>).toString()
+      const queryString = new URLSearchParams(
+        queryParams as unknown as Record<string, string>
+      ).toString();
 
       return getUsers(queryString).then((res) => res.data);
     },
+    placeholderData: keepPreviousData,
   });
 
   const { mutate: userMutate } = useMutation({
@@ -106,16 +128,19 @@ const Users = () => {
   return (
     <>
       <Space style={{ width: "100%" }} size={"large"} vertical>
-        <Breadcrumb
-          separator={<RightOutlined />}
-          items={[
-            { title: <Link to={"/"}>Dashboard</Link> },
-            { title: "Users" },
-          ]}
-        />
-        {isLoading && <div>Loading....</div>}
-        {isError && <div>{error.message}</div>}
-
+        <Flex justify="space-between">
+          <Breadcrumb
+            separator={<RightOutlined />}
+            items={[
+              { title: <Link to={"/"}>Dashboard</Link> },
+              { title: "Users" },
+            ]}
+          />
+          {isError && <Typography.Text type="danger">{error.message}</Typography.Text>}
+          {isFetching && (
+            <Spin indicator={<LoadingOutlined spin />} size="large" />
+          )}
+        </Flex>
         <UserFilter
           onFilterChange={(filterName, filterValue) => {
             console.log("fn", filterName);
