@@ -18,3 +18,5 @@ export const getTenants = ()=>api.get("/tenants")
 export const createUser = (user:CreateUserData)=>api.post("/users", user)
 
 export const createTenant= (tenant: createTenantData)=>api.post("/tenants", tenant)
+
+export const updateUser=(user:CreateUserData, id:number)=>api.patch(`/users/${id}`, user)

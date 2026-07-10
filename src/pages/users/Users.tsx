@@ -22,15 +22,14 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createUser, getUsers } from "../../http/api";
+import { createUser, getUsers, updateUser } from "../../http/api";
 import type { CreateUserData, FieldData, User } from "../../types";
 import { useAuthStore } from "../../store";
 import UserFilter from "./UserFilter";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import UserForm from "./forms/UserForm";
 import { PER_PAGE } from "../../constants";
 import { debounce } from "lodash";
-
 
 const columns = [
   {
@@ -65,31 +64,16 @@ const columns = [
     dataIndex: "tenant",
     key: "tenant",
     render: (_text: string, record: User) => {
-      return (
-        <div>
-          {record.tenant?.name}
-        </div>
-      );
+      return <div>{record.tenant?.name}</div>;
     },
   },
-  //   {
-  //     title: "Action",
-  //     dataIndex: "action",
-  //     key: "action",
-  //     render: () => {
-  //       return (
-  //         <div>
-  //           <Link to={"/users/edit"}>Edit</Link>
-  //         </div>
-  //       );
-  //     },
-  //   },
 ];
 
 const Users = () => {
   const { user } = useAuthStore();
   const queryclient = useQueryClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [currentEditUser, setCurrenEditUser] = useState<User | null>(null)
   const [form] = Form.useForm();
 
   const [filterForm] = Form.useForm();
@@ -101,6 +85,13 @@ const Users = () => {
   const {
     token: { colorBgLayout },
   } = theme.useToken();
+
+  useEffect(()=>{
+    if(currentEditUser){
+      (()=>setDrawerOpen(true))()
+      form.setFieldsValue({...currentEditUser, tenantId: currentEditUser.tenant?.id})
+    }
+  },[currentEditUser, form])
 
   const {
     data: getUser,
@@ -131,9 +122,27 @@ const Users = () => {
     },
   });
 
+  const { mutate: updateUserMutate } = useMutation({
+    mutationKey: ["user-update"],
+    mutationFn: async (data: CreateUserData) =>
+      await updateUser(data, currentEditUser.id).then((res) => res.data),
+    onSuccess: async () => {
+      queryclient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+
   const onHandleSubmit = async () => {
+
+    const isEditMode = !!currentEditUser
+
+    if(isEditMode){
+      updateUserMutate(form.getFieldsValue())
+    }else{
     await form.validateFields();
+    setCurrenEditUser(null)
     userMutate(form.getFieldsValue());
+    }
+
     form.resetFields();
     setDrawerOpen(false);
   };
@@ -143,7 +152,7 @@ const Users = () => {
       setQueryParams((prev) => ({
         ...prev,
         q: value,
-        currentPage : 1
+        currentPage: 1,
       }));
     }, 500);
   }, []);
@@ -156,12 +165,12 @@ const Users = () => {
       .reduce((acc, item) => ({ ...acc, ...item }), {});
 
     if ("q" in chanedFilterFileds) {
-      debounceQUpdate(chanedFilterFileds.q)
+      debounceQUpdate(chanedFilterFileds.q);
     } else {
       setQueryParams((prev) => ({
         ...prev,
         ...chanedFilterFileds,
-        currentPage : 1
+        currentPage: 1,
       }));
     }
   };
@@ -214,23 +223,40 @@ const Users = () => {
                 };
               });
             },
-            showTotal:(total:number, range: number[])=>{
-              return `Showing ${range[0]} - ${range[1]} of ${total} items`
-            }
+            showTotal: (total: number, range: number[]) => {
+              return `Showing ${range[0]} - ${range[1]} of ${total} items`;
+            },
           }}
           dataSource={getUser?.data}
-          columns={columns}
+          columns={[
+            ...columns,
+            {
+              title: "Action",
+              dataIndex: "action",
+              key: "action",
+              render: (_text: string, record: User) => {
+                return (
+                  <Space>
+                    <Button onClick={()=>{
+                      setCurrenEditUser(record)
+                    }} type="link">Edit</Button>
+                  </Space>
+                );
+              },
+            },
+          ]}
           rowKey={"id"}
         />
 
         <Drawer
-          title="Create user"
+          title={currentEditUser ? "Edit user" : "Create user"}
           size={720}
           styles={{ body: { background: colorBgLayout } }}
           destroyOnHidden={true}
           open={drawerOpen}
           onClose={() => {
             form.resetFields();
+            setCurrenEditUser(null)
             setDrawerOpen(false);
           }}
           extra={
@@ -250,7 +276,7 @@ const Users = () => {
           }
         >
           <Form layout="vertical" form={form}>
-            <UserForm />
+            <UserForm isEditMode={!!currentEditUser}/>
           </Form>
         </Drawer>
       </Space>

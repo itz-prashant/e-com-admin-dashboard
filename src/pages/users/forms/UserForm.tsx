@@ -3,7 +3,7 @@ import { getTenants } from "../../../http/api";
 import { useQuery } from "@tanstack/react-query";
 import type { Tenant } from "../../../types";
 
-const UserForm = () => {
+const UserForm = ({isEditMode}:{isEditMode:boolean}) => {
   const { data: tenants } = useQuery({
     queryKey: ["tenants"],
     queryFn: () => {
@@ -54,7 +54,7 @@ const UserForm = () => {
             </Row>
           </Card>
 
-          <Card title="Security info">
+         {!isEditMode && <Card title="Security info">
             <Row gutter={20}>
               <Col span={12}>
                 <Form.Item label="Password" name="password" rules={[
@@ -67,7 +67,7 @@ const UserForm = () => {
                 </Form.Item>
               </Col>
             </Row>
-          </Card>
+          </Card>}
 
           <Card title="Role">
             <Row gutter={20}>
@@ -79,6 +79,7 @@ const UserForm = () => {
                     }
                 ]}>
                   <Select
+                  id="selectBoxInUserForm"
                     size="large"
                     onChange={() => {}}
                     allowClear={true}
