@@ -1,4 +1,4 @@
-import { Navigate, NavLink, Outlet } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store";
 import Sider from "antd/es/layout/Sider";
 import { Content, Footer, Header } from "antd/es/layout/layout";
@@ -63,6 +63,8 @@ const Dashboard = () => {
   const { logout, user } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
 
+  const location = useLocation()
+
   const { mutate: logoutMutate } = useMutation({
     mutationKey: ["logout"],
     mutationFn: logoutUser,
@@ -77,7 +79,7 @@ const Dashboard = () => {
   } = theme.useToken();
 
   if (user === null) {
-    return <Navigate to={"/auth/login"} replace={true} />;
+    return <Navigate to={`/auth/login?returnTo=${location.pathname}`} replace={true} />;
   }
 
    const items = getMenuItems(user.role);
