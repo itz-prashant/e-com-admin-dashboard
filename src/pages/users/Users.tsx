@@ -143,8 +143,9 @@ const Users = () => {
       setQueryParams((prev) => ({
         ...prev,
         q: value,
+        currentPage : 1
       }));
-    }, 1000);
+    }, 500);
   }, []);
 
   const onFilterChange = async (changedFields: FieldData[]) => {
@@ -160,6 +161,7 @@ const Users = () => {
       setQueryParams((prev) => ({
         ...prev,
         ...chanedFilterFileds,
+        currentPage : 1
       }));
     }
   };
