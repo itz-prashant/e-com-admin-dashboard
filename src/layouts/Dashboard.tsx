@@ -31,11 +31,6 @@ const getMenuItems = (role: string) => {
       label: <NavLink to={"/"}>Home</NavLink>,
     },
     {
-      key: "/restaurants",
-      icon: <Icon component={FoodIcon} />,
-      label: <NavLink to={"/restaurants"}>Restaurants</NavLink>,
-    },
-    {
       key: "/products",
       icon: <Icon component={BasketIcon} />,
       label: <NavLink to={"/products"}>Products</NavLink>,
@@ -48,14 +43,19 @@ const getMenuItems = (role: string) => {
   ];
 
   if (role === "admin") {
-    const menus = [...baseItems]
+    const menus = [...baseItems];
 
-    menus.splice(1,0,{
-        key: "/users",
-        icon: <Icon component={UserIcon} />,
-        label: <NavLink to={"/users"}>Users</NavLink>,
-      })
-        return menus
+    menus.splice(1, 0, {
+      key: "/users",
+      icon: <Icon component={UserIcon} />,
+      label: <NavLink to={"/users"}>Users</NavLink>,
+    });
+    menus.splice(2, 0, {
+      key: "/restaurants",
+      icon: <Icon component={FoodIcon} />,
+      label: <NavLink to={"/restaurants"}>Restaurants</NavLink>,
+    });
+    return menus;
   }
 };
 
@@ -63,7 +63,7 @@ const Dashboard = () => {
   const { logout, user } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
 
-  const location = useLocation()
+  const location = useLocation();
 
   const { mutate: logoutMutate } = useMutation({
     mutationKey: ["logout"],
@@ -79,10 +79,15 @@ const Dashboard = () => {
   } = theme.useToken();
 
   if (user === null) {
-    return <Navigate to={`/auth/login?returnTo=${location.pathname}`} replace={true} />;
+    return (
+      <Navigate
+        to={`/auth/login?returnTo=${location.pathname}`}
+        replace={true}
+      />
+    );
   }
 
-   const items = getMenuItems(user.role);
+  const items = getMenuItems(user.role);
 
   const currentYear = new Date().getFullYear();
 
