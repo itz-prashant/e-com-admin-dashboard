@@ -1,13 +1,20 @@
 import { Breadcrumb, Button, Drawer, Form, Space, Table, theme } from "antd";
 import { RightOutlined, PlusOutlined } from "@ant-design/icons";
 import { Link, Navigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useAuthStore } from "../../store";
-import React from "react";
+import React, { useState } from "react";
 import TenantFilter from "./TenantFilter";
 import { createTenant, getTenants } from "../../http/api";
 import TenantForm from "./forms/TenantForm";
-import type { createTenantData } from "../../types";
+import type { createTenantData, FieldData } from "../../types";
+import { PER_PAGE } from "../../constants";
+import { debounce } from "lodash";
 
 const columns = [
   {
@@ -31,7 +38,14 @@ const Tenants = () => {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [form] = Form.useForm();
 
+  const [tenantFilterForm] = Form.useForm();
+
   const queryClient = useQueryClient();
+
+  const [queryParams, setQueryParams] = useState({
+    perPage: PER_PAGE,
+    currentPage: 1,
+  });
 
   const {
     token: { colorBgLayout },
@@ -42,10 +56,19 @@ const Tenants = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["tenants"],
+    queryKey: ["tenants", queryParams],
     queryFn: () => {
-      return getTenants().then((res) => res.data);
+      const filterParams = Object.fromEntries(
+        Object.entries(queryParams).filter((item) => !!item[1])
+      );
+
+      const queryString = new URLSearchParams(
+        filterParams as unknown as Record<string, string>
+      ).toString();
+
+      return getTenants(queryString).then((res) => res.data);
     },
+    placeholderData: keepPreviousData,
   });
 
   const { mutate: tenantMutate } = useMutation({
@@ -67,6 +90,34 @@ const Tenants = () => {
     setDrawerOpen(false);
   };
 
+  const debounceQUpdate = React.useMemo(() => {
+    return debounce((value: string | undefined) => {
+      setQueryParams((prev) => ({
+        ...prev,
+        q: value,
+        currentPage: 1,
+      }));
+    }, 500);
+  }, []);
+
+  const onFilterChange = (changedFiled: FieldData[]) => {
+    const changedFilterField = changedFiled
+      .map((item) => ({
+        [item.name[0]]: item.value,
+      }))
+      .reduce((acc, item) => ({ ...acc, ...item }), {});
+
+    if ("q" in changedFilterField) {
+      debounceQUpdate(changedFilterField.q);
+    } else {
+      setQueryParams((prev) => ({
+        ...prev,
+        ...changedFilterField,
+        currentPage: 1,
+      }));
+    }
+  };
+
   if (user?.role !== "admin") {
     return <Navigate to="/" replace={true} />;
   }
@@ -84,21 +135,40 @@ const Tenants = () => {
         {isLoading && <div>Loading...</div>}
         {isError && <div>{error.message}</div>}
 
-        <TenantFilter
-          onFilterChange={(filterName: string, filterValue: string) => {
-            console.log(filterName, filterValue);
-          }}
-        >
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setDrawerOpen(true)}
+        <Form form={tenantFilterForm} onFieldsChange={onFilterChange}>
+          <TenantFilter
           >
-            Add Restaurant
-          </Button>
-        </TenantFilter>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setDrawerOpen(true)}
+            >
+              Add Restaurant
+            </Button>
+          </TenantFilter>
+        </Form>
 
-        <Table columns={columns} dataSource={tenants} rowKey={"id"} />
+        <Table
+          pagination={{
+            total: tenants?.total,
+            pageSize: queryParams.perPage,
+            current: queryParams.currentPage,
+            onChange: (page) => {
+              setQueryParams((prev) => {
+                return {
+                  ...prev,
+                  currentPage: page,
+                };
+              });
+            },
+            showTotal: (total: number, range: number[]) => {
+              return `Showing ${range[0]} - ${range[1]} of ${total} items`;
+            },
+          }}
+          columns={columns}
+          dataSource={tenants?.data}
+          rowKey={"id"}
+        />
 
         <Drawer
           title="Create restaurant"
