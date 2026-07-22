@@ -11,7 +11,6 @@ const UserForm = ({ isEditMode }: { isEditMode: boolean }) => {
       return getTenants().then((res) => res.data);
     },
   });
-
   return (
     <Row>
       <Col span={24}>
@@ -134,7 +133,7 @@ const UserForm = ({ isEditMode }: { isEditMode: boolean }) => {
                         allowClear={true}
                         placeholder={"Select Restaurant"}
                         style={{ width: "100%" }}
-                        options={tenants.map((tenant: Tenant) => ({
+                        options={tenants?.data.map((tenant: Tenant) => ({
                           label: tenant.name,
                           value: tenant.id,
                         }))}

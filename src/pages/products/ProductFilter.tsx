@@ -1,10 +1,28 @@
+import { useQuery } from "@tanstack/react-query";
 import { Card, Col, Form, Input, Row, Select, Space, Switch, Typography } from "antd";
+import { getCategories, getTenants } from "../../http/api";
+import type { Category, Tenant } from "../../types";
 
 type ProductFilterProps = {
   children?: React.ReactNode;
 };
 
 const ProductFilter = ({ children }: ProductFilterProps) => {
+
+    const {data:restaurants} = useQuery({
+        queryKey:["tenants"],
+        queryFn: ()=>{
+           return getTenants(`perPage=100&currentPage=1`)
+        },
+    })
+
+    const {data:categories} = useQuery({
+        queryKey:["categories"],
+        queryFn: ()=>{
+           return getCategories()
+        },
+    })
+
   return (
     <Card>
       <Row justify="space-between">
@@ -26,24 +44,24 @@ const ProductFilter = ({ children }: ProductFilterProps) => {
                 allowClear={true}
                 placeholder={"Select category"}
                 style={{ width: "100%" }}
-                options={[
-                  { value: "pizza", label: "Pizza" },
-                  { value: "beverages", label: "Beverages" },
-                ]}
+                options={categories?.data.map((category: Category)=>({
+                    value: category._id,
+                    label:category.name
+                }))}
               />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="category">
+              <Form.Item name="restaurants">
                 <Select
    
                 allowClear={true}
                 placeholder={"Select restaurant"}
                 style={{ width: "100%" }}
-                options={[
-                  { value: "pizza-hub", label: "Pizza hub" },
-                  { value: "corner", label: "Softy corner" },
-                ]}
+                options={restaurants?.data.data.map((restaurant:Tenant)=>({
+                    value: restaurant.id,
+                    label: restaurant.name
+                }))}
               />
               </Form.Item>
             </Col>
