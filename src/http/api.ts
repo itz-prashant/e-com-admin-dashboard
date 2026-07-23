@@ -23,3 +23,5 @@ export const updateUser=(user:CreateUserData, id:number)=>api.patch(`${AUTH_SERV
 // Catelog service
 
 export const getCategories=()=>api.get(`${CATALOG_SERVICE}/categories`)
+
+export const getProducts=(queryParams:string)=>api.get(`${CATALOG_SERVICE}/products?${queryParams}`)
