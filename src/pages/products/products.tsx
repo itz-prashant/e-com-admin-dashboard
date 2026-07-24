@@ -1,29 +1,41 @@
-import { Breadcrumb, Button, Flex, Form, Image, Space, Table, Tag, Typography } from "antd";
+import {
+  Breadcrumb,
+  Button,
+  Flex,
+  Form,
+  Image,
+  Space,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
 import { Link } from "react-router-dom";
-import { PlusOutlined, RightOutlined } from "@ant-design/icons";
+import { LoadingOutlined, PlusOutlined, RightOutlined } from "@ant-design/icons";
 import ProductFilter from "./ProductFilter";
 import { PER_PAGE } from "../../constants";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getProducts } from "../../http/api";
-import type { Product } from "../../types";
+import type { FieldData, Product } from "../../types";
 import { format } from "date-fns";
+import { debounce } from "lodash";
 
 const columns = [
   {
     title: "Product name",
     dataIndex: "name",
     key: "name",
-    render :(_text:boolean, record:Product)=>{
+    render: (_text: boolean, record: Product) => {
       return (
         <div>
           <Space>
-            <Image width={60} src={`${record.image}`} preview={false}/>
+            <Image width={60} src={`${record.image}`} preview={false} />
             <Typography.Text>{record.name}</Typography.Text>
           </Space>
         </div>
-      )
-    }
+      );
+    },
   },
   {
     title: "Description",
@@ -34,25 +46,29 @@ const columns = [
     title: "Status",
     dataIndex: "isPublished",
     key: "isPublished",
-     render :(_text:string, record:Product)=>{
+    render: (_text: string, record: Product) => {
       return (
         <>
-        {record.isPublished ? <Tag color="green">Published</Tag> :  <Tag color="red">Draft</Tag> }
+          {record.isPublished ? (
+            <Tag color="green">Published</Tag>
+          ) : (
+            <Tag color="red">Draft</Tag>
+          )}
         </>
-      )
-    }
+      );
+    },
   },
   {
     title: "Created At",
     dataIndex: "createdAt",
     key: "createdAt",
-    render : (text:string)=>{
+    render: (text: string) => {
       return (
         <Typography.Text>
           {format(new Date(text), "dd/MM/yyyy HH:MM")}
         </Typography.Text>
-      )
-    }
+      );
+    },
   },
 ];
 
@@ -60,14 +76,11 @@ const Products = () => {
   const [filterForm] = Form.useForm();
 
   const [queryParams, setQueryParams] = useState({
-    perPage: PER_PAGE,
-    currentPage: 1,
+    limit: PER_PAGE,
+    page: 1,
   });
 
-  const {
-    data: products,
-
-  } = useQuery({
+  const { data: products, isFetching,isError,error} = useQuery({
     queryKey: ["products", queryParams],
     queryFn: () => {
       const filterParams = Object.fromEntries(
@@ -82,7 +95,35 @@ const Products = () => {
     placeholderData: keepPreviousData,
   });
 
-  console.log("p", products)
+   const debounceQUpdate = useMemo(() => {
+      return debounce((value: string | undefined) => {
+        setQueryParams((prev) => ({
+          ...prev,
+          q: value,
+          page: 1,
+        }));
+      }, 500);
+    }, []);
+
+  const onFilterChange = (changeFields: FieldData[]) => {
+    const chanedFilterFileds = changeFields
+      .map((item) => ({
+        [item.name[0]]: item.value,
+      }))
+      .reduce((acc, item) => ({ ...acc, ...item }), {});
+
+      console.log(chanedFilterFileds)
+
+      if ("q" in chanedFilterFileds) {
+      debounceQUpdate(chanedFilterFileds.q);
+    } else {
+      setQueryParams((prev) => ({
+        ...prev,
+        ...chanedFilterFileds,
+        page: 1,
+      }));
+    }
+  };
 
   return (
     <>
@@ -95,10 +136,16 @@ const Products = () => {
               { title: "Products" },
             ]}
           />
+            {isError && (
+            <Typography.Text type="danger">{error.message}</Typography.Text>
+          )}
+          {isFetching && (
+            <Spin indicator={<LoadingOutlined spin />} size="large" />
+          )}
         </Flex>
       </Space>
 
-      <Form form={filterForm} onFieldsChange={() => {}}>
+      <Form form={filterForm} onFieldsChange={onFilterChange}>
         <ProductFilter>
           <Button onClick={() => {}} type="primary" icon={<PlusOutlined />}>
             Add Product
@@ -109,13 +156,13 @@ const Products = () => {
       <Table
         pagination={{
           total: products?.total,
-          pageSize: queryParams.perPage,
-          current: queryParams.currentPage,
+          pageSize: queryParams.limit,
+          current: queryParams.page,
           onChange: (page) => {
             setQueryParams((prev) => {
               return {
                 ...prev,
-                currentPage: page,
+                page: page,
               };
             });
           },
