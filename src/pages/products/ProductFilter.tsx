@@ -74,7 +74,7 @@ const ProductFilter = ({ children }: ProductFilterProps) => {
                  <Form.Item name="isPublished">
                   <Switch onChange={()=>{}} />
                  </Form.Item>
-                <Typography.Text>Show only published</Typography.Text>
+                <Typography.Text style={{marginBottom: "22px", display: "block"}}>Show only published</Typography.Text>
                </Space>
             </Col>
           </Row>
