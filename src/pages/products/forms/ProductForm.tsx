@@ -72,7 +72,7 @@ const ProductForm = () => {
                     placeholder={"Select category"}
                     style={{ width: "100%" }}
                     options={categories?.data.map((category: Category) => ({
-                      value: category._id,
+                      value: JSON.stringify(category),
                       label: category.name,
                     }))}
                   />
@@ -155,7 +155,7 @@ const ProductForm = () => {
 
           {
             selectedCategory && (
-              <Pricing />
+              <Pricing selectedCategory={selectedCategory}/>
             )
           }
           {
