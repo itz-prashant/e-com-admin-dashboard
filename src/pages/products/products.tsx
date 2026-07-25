@@ -1,6 +1,7 @@
 import {
   Breadcrumb,
   Button,
+  Drawer,
   Flex,
   Form,
   Image,
@@ -8,10 +9,15 @@ import {
   Spin,
   Table,
   Tag,
+  theme,
   Typography,
 } from "antd";
 import { Link } from "react-router-dom";
-import { LoadingOutlined, PlusOutlined, RightOutlined } from "@ant-design/icons";
+import {
+  LoadingOutlined,
+  PlusOutlined,
+  RightOutlined,
+} from "@ant-design/icons";
 import ProductFilter from "./ProductFilter";
 import { PER_PAGE } from "../../constants";
 import { useMemo, useState } from "react";
@@ -21,6 +27,7 @@ import type { FieldData, Product } from "../../types";
 import { format } from "date-fns";
 import { debounce } from "lodash";
 import { useAuthStore } from "../../store";
+import ProductForm from "./forms/ProductForm";
 
 const columns = [
   {
@@ -76,15 +83,38 @@ const columns = [
 const Products = () => {
   const [filterForm] = Form.useForm();
 
-  const {user} = useAuthStore()
+  const { user } = useAuthStore();
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const [form] = Form.useForm();
 
   const [queryParams, setQueryParams] = useState({
     limit: PER_PAGE,
     page: 1,
-    tenantId: user.role === "manager" ? user?.tenant.id : undefined
+    tenantId: user.role === "manager" ? user?.tenant.id : undefined,
   });
 
-  const { data: products, isFetching,isError,error} = useQuery({
+  const {
+    token: { colorBgLayout },
+  } = theme.useToken();
+
+  // useEffect(() => {
+  //   if (currentEditUser) {
+  //     (() => setDrawerOpen(true))();
+  //     form.setFieldsValue({
+  //       ...currentEditUser,
+  //       tenantId: currentEditUser.tenant?.id,
+  //     });
+  //   }
+  // }, [currentEditUser, form]);
+
+  const {
+    data: products,
+    isFetching,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["products", queryParams],
     queryFn: () => {
       const filterParams = Object.fromEntries(
@@ -99,15 +129,15 @@ const Products = () => {
     placeholderData: keepPreviousData,
   });
 
-   const debounceQUpdate = useMemo(() => {
-      return debounce((value: string | undefined) => {
-        setQueryParams((prev) => ({
-          ...prev,
-          q: value,
-          page: 1,
-        }));
-      }, 500);
-    }, []);
+  const debounceQUpdate = useMemo(() => {
+    return debounce((value: string | undefined) => {
+      setQueryParams((prev) => ({
+        ...prev,
+        q: value,
+        page: 1,
+      }));
+    }, 500);
+  }, []);
 
   const onFilterChange = (changeFields: FieldData[]) => {
     const chanedFilterFileds = changeFields
@@ -116,9 +146,9 @@ const Products = () => {
       }))
       .reduce((acc, item) => ({ ...acc, ...item }), {});
 
-      console.log(chanedFilterFileds)
+    console.log(chanedFilterFileds);
 
-      if ("q" in chanedFilterFileds) {
+    if ("q" in chanedFilterFileds) {
       debounceQUpdate(chanedFilterFileds.q);
     } else {
       setQueryParams((prev) => ({
@@ -128,6 +158,10 @@ const Products = () => {
       }));
     }
   };
+
+  const onHandleSubmit = ()=>{
+
+  }
 
   return (
     <>
@@ -140,60 +174,91 @@ const Products = () => {
               { title: "Products" },
             ]}
           />
-            {isError && (
+          {isError && (
             <Typography.Text type="danger">{error.message}</Typography.Text>
           )}
           {isFetching && (
             <Spin indicator={<LoadingOutlined spin />} size="large" />
           )}
         </Flex>
-      </Space>
 
-      <Form form={filterForm} onFieldsChange={onFilterChange}>
-        <ProductFilter>
-          <Button onClick={() => {}} type="primary" icon={<PlusOutlined />}>
-            Add Product
-          </Button>
-        </ProductFilter>
-      </Form>
+        <Form form={filterForm} onFieldsChange={onFilterChange}>
+          <ProductFilter>
+            <Button onClick={() => setDrawerOpen(true)} type="primary" icon={<PlusOutlined />}>
+              Add Product
+            </Button>
+          </ProductFilter>
+        </Form>
 
-      <Table
-        pagination={{
-          total: products?.total,
-          pageSize: queryParams.limit,
-          current: queryParams.page,
-          onChange: (page) => {
-            setQueryParams((prev) => {
-              return {
-                ...prev,
-                page: page,
-              };
-            });
-          },
-          showTotal: (total: number, range: number[]) => {
-            return `Showing ${range[0]} - ${range[1]} of ${total} items`;
-          },
-        }}
-        dataSource={products?.data}
-        columns={[
-          ...columns,
-          {
-            title: "Action",
-            dataIndex: "action",
-            key: "action",
-            render: () => {
-              return (
-                <Space>
-                  <Button onClick={() => {}} type="link">
-                    Edit
-                  </Button>
-                </Space>
-              );
+        <Table
+          pagination={{
+            total: products?.total,
+            pageSize: queryParams.limit,
+            current: queryParams.page,
+            onChange: (page) => {
+              setQueryParams((prev) => {
+                return {
+                  ...prev,
+                  page: page,
+                };
+              });
             },
-          },
-        ]}
-        rowKey={"_id"}
-      />
+            showTotal: (total: number, range: number[]) => {
+              return `Showing ${range[0]} - ${range[1]} of ${total} items`;
+            },
+          }}
+          dataSource={products?.data}
+          columns={[
+            ...columns,
+            {
+              title: "Action",
+              dataIndex: "action",
+              key: "action",
+              render: () => {
+                return (
+                  <Space>
+                    <Button onClick={() => {}} type="link">
+                      Edit
+                    </Button>
+                  </Space>
+                );
+              },
+            },
+          ]}
+          rowKey={"_id"}
+        />
+
+        <Drawer
+          title={"Add product"}
+          size={720}
+          styles={{ body: { background: colorBgLayout } }}
+          destroyOnHidden={true}
+          open={drawerOpen}
+          onClose={() => {
+            form.resetFields();
+            setDrawerOpen(false);
+          }}
+          extra={
+            <Space>
+              <Button
+                onClick={() => {
+                  setDrawerOpen(false);
+                  form.resetFields();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="primary" onClick={onHandleSubmit}>
+                Submit
+              </Button>
+            </Space>
+          }
+        >
+          <Form layout="vertical" form={form}>
+            <ProductForm />
+          </Form>
+        </Drawer>
+      </Space>
     </>
   );
 };
