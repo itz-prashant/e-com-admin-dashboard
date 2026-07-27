@@ -21,13 +21,14 @@ import {
 import ProductFilter from "./ProductFilter";
 import { PER_PAGE } from "../../constants";
 import { useMemo, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { getProducts } from "../../http/api";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createProduct, getProducts } from "../../http/api";
 import type { FieldData, Product } from "../../types";
 import { format } from "date-fns";
 import { debounce } from "lodash";
 import { useAuthStore } from "../../store";
 import ProductForm from "./forms/ProductForm";
+import { makeFormData } from "./helper";
 
 const columns = [
   {
@@ -89,6 +90,8 @@ const Products = () => {
 
   const [form] = Form.useForm();
 
+  const queryClient = useQueryClient()
+
   const [queryParams, setQueryParams] = useState({
     limit: PER_PAGE,
     page: 1,
@@ -99,15 +102,6 @@ const Products = () => {
     token: { colorBgLayout },
   } = theme.useToken();
 
-  // useEffect(() => {
-  //   if (currentEditUser) {
-  //     (() => setDrawerOpen(true))();
-  //     form.setFieldsValue({
-  //       ...currentEditUser,
-  //       tenantId: currentEditUser.tenant?.id,
-  //     });
-  //   }
-  // }, [currentEditUser, form]);
 
   const {
     data: products,
@@ -128,6 +122,17 @@ const Products = () => {
     },
     placeholderData: keepPreviousData,
   });
+
+  const {mutate: productMutate} = useMutation({
+    mutationKey: ["create-product"],
+    mutationFn: async (data:FormData)=>{createProduct(data).then((res)=>res.data)},
+    onSuccess: async ()=>{
+      queryClient.invalidateQueries({queryKey:["products"]})
+      form.resetFields()
+      setDrawerOpen(false)
+      return
+    }
+  })
 
   const debounceQUpdate = useMemo(() => {
     return debounce((value: string | undefined) => {
@@ -159,8 +164,43 @@ const Products = () => {
     }
   };
 
-  const onHandleSubmit = ()=>{
+  const onHandleSubmit = async ()=>{
+    await form.validateFields()
 
+    const priceConfigiration = form.getFieldValue("priceConfiguration")
+
+    const pricing = Object.entries(priceConfigiration).reduce((acc, [key,value])=>{
+      const parsedKey = JSON.parse(key)
+
+      return {
+        ...acc,
+        [parsedKey.configurationKey] :{
+          priceType: parsedKey.priceType,
+          availableOption: value
+        }
+      }
+    },{})
+
+    const categoryId = JSON.parse(form.getFieldValue("categoryId"))._id
+
+    const attributes = Object.entries(form.getFieldValue("attributes")).map(([key, value])=>{
+       return {
+        name: key,
+        value: value
+       }
+    })
+
+    const postData = {
+      ...form.getFieldsValue(),
+      image: form.getFieldValue("image"),
+      isPublished: form.getFieldValue("isPublished") ? true : false,
+      categoryId,
+      priceConfigiration: pricing,
+      attributes
+    }
+
+    const formData = makeFormData(postData)
+    productMutate(formData)
   }
 
   return (

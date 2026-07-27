@@ -22,7 +22,7 @@ const Attributes = ({ selectedCategory }: PircingProps) => {
             {attribute.widgetType === "radio" ? (
               <Form.Item
                 label={attribute.name}
-                name={["attribute", attribute.name]}
+                name={["attributes", attribute.name]}
                 initialValue={attribute.defaultValue}
                 rules={[
                   {

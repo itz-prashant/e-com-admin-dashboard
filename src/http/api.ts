@@ -25,3 +25,7 @@ export const updateUser=(user:CreateUserData, id:number)=>api.patch(`${AUTH_SERV
 export const getCategories=()=>api.get(`${CATALOG_SERVICE}/categories`)
 
 export const getProducts=(queryParams:string)=>api.get(`${CATALOG_SERVICE}/products?${queryParams}`)
+
+export const createProduct = (product:FormData)=>api.post(`${CATALOG_SERVICE}/products`, product, {
+    headers: {"Content-Type": "multipart/form-data"}
+})

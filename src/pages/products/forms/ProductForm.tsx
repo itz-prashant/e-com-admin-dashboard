@@ -3,12 +3,14 @@ import {
   Col,
   Form,
   Input,
+  message,
   Row,
   Select,
   Space,
   Switch,
   Typography,
   Upload,
+  type UploadProps,
 } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { getCategories, getTenants } from "../../../http/api";
@@ -16,10 +18,13 @@ import { PlusOutlined } from "@ant-design/icons";
 import type { Category, Tenant } from "../../../types";
 import Pricing from "./Pricing";
 import Attributes from "./Attributes";
+import { useState } from "react";
 
 const ProductForm = () => {
+  const selectedCategory = Form.useWatch("categoryId");
+  const [messageApi, contextHolder] = message.useMessage();
 
-  const selectedCategory = Form.useWatch("categoryId")
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -34,6 +39,23 @@ const ProductForm = () => {
       return getTenants();
     },
   });
+
+  const uploaderConfig: UploadProps = {
+    name: "file",
+    multiple: false,
+    showUploadList: false,
+    beforeUpload: (file) => {
+      const isJpgOrPng =
+        file.type === "image/jpeg" || file.type === "image/png";
+
+      if (!isJpgOrPng) {
+        messageApi.error("You can upload only Jpeg or Png");
+      }
+
+      setImageUrl(URL.createObjectURL(file));
+      return false;
+    },
+  };
 
   return (
     <Row>
@@ -105,7 +127,7 @@ const ProductForm = () => {
               <Col span={12}>
                 <Form.Item
                   label=""
-                  name="iamge"
+                  name="image"
                   rules={[
                     {
                       required: true,
@@ -113,11 +135,16 @@ const ProductForm = () => {
                     },
                   ]}
                 >
-                  <Upload listType="picture-card">
-                    <Space vertical>
-                      <PlusOutlined />
-                      <Typography.Text>Upload</Typography.Text>
-                    </Space>
+                  {contextHolder}
+                  <Upload listType="picture-card" {...uploaderConfig}>
+                    {imageUrl ? (
+                      <img src={imageUrl} alt="product-image" />
+                    ) : (
+                      <Space vertical>
+                        <PlusOutlined />
+                        <Typography.Text>Upload</Typography.Text>
+                      </Space>
+                    )}
                   </Upload>
                 </Form.Item>
               </Col>
@@ -153,16 +180,10 @@ const ProductForm = () => {
             </Row>
           </Card>
 
-          {
-            selectedCategory && (
-              <Pricing selectedCategory={selectedCategory}/>
-            )
-          }
-          {
-            selectedCategory && (
-              <Attributes selectedCategory={selectedCategory}/>
-            )
-          }
+          {selectedCategory && <Pricing selectedCategory={selectedCategory} />}
+          {selectedCategory && (
+            <Attributes selectedCategory={selectedCategory} />
+          )}
 
           <Card title="Other Property">
             <Row gutter={24}>
