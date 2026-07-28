@@ -25,6 +25,7 @@ const ProductForm = () => {
   const [messageApi, contextHolder] = message.useMessage();
 
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const form = Form.useFormInstance();
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -53,6 +54,9 @@ const ProductForm = () => {
       }
 
       setImageUrl(URL.createObjectURL(file));
+        form.setFieldValue("image", {
+    file: file,
+  });
       return false;
     },
   };
@@ -138,7 +142,7 @@ const ProductForm = () => {
                   {contextHolder}
                   <Upload listType="picture-card" {...uploaderConfig}>
                     {imageUrl ? (
-                      <img src={imageUrl} alt="product-image" />
+                      <img src={imageUrl} alt="product-image" height={100} />
                     ) : (
                       <Space vertical>
                         <PlusOutlined />

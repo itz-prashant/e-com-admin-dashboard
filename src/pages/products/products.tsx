@@ -21,7 +21,12 @@ import {
 import ProductFilter from "./ProductFilter";
 import { PER_PAGE } from "../../constants";
 import { useMemo, useState } from "react";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { createProduct, getProducts } from "../../http/api";
 import type { FieldData, Product } from "../../types";
 import { format } from "date-fns";
@@ -90,7 +95,7 @@ const Products = () => {
 
   const [form] = Form.useForm();
 
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   const [queryParams, setQueryParams] = useState({
     limit: PER_PAGE,
@@ -101,7 +106,6 @@ const Products = () => {
   const {
     token: { colorBgLayout },
   } = theme.useToken();
-
 
   const {
     data: products,
@@ -123,16 +127,18 @@ const Products = () => {
     placeholderData: keepPreviousData,
   });
 
-  const {mutate: productMutate} = useMutation({
+  const { mutate: productMutate } = useMutation({
     mutationKey: ["create-product"],
-    mutationFn: async (data:FormData)=>{createProduct(data).then((res)=>res.data)},
-    onSuccess: async ()=>{
-      queryClient.invalidateQueries({queryKey:["products"]})
-      form.resetFields()
-      setDrawerOpen(false)
-      return
-    }
-  })
+    mutationFn: async (data: FormData) => {
+      createProduct(data).then((res) => res.data);
+    },
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      form.resetFields();
+      setDrawerOpen(false);
+      return;
+    },
+  });
 
   const debounceQUpdate = useMemo(() => {
     return debounce((value: string | undefined) => {
@@ -151,8 +157,6 @@ const Products = () => {
       }))
       .reduce((acc, item) => ({ ...acc, ...item }), {});
 
-    console.log(chanedFilterFileds);
-
     if ("q" in chanedFilterFileds) {
       debounceQUpdate(chanedFilterFileds.q);
     } else {
@@ -164,44 +168,50 @@ const Products = () => {
     }
   };
 
-  const onHandleSubmit = async ()=>{
-    await form.validateFields()
+  const onHandleSubmit = async () => {
+    await form.validateFields();
+    const priceConfiguration = form.getFieldValue("priceConfiguration");
 
-    const priceConfigiration = form.getFieldValue("priceConfiguration")
+    const pricing = Object.entries(priceConfiguration).reduce(
+      (acc, [key, value]) => {
+        const parsedKey = JSON.parse(key);
 
-    const pricing = Object.entries(priceConfigiration).reduce((acc, [key,value])=>{
-      const parsedKey = JSON.parse(key)
+        return {
+          ...acc,
+          [parsedKey.configurationKey]: {
+            priceType: Array.isArray(parsedKey.priceType)
+              ? parsedKey.priceType[0]
+              : parsedKey.priceType,
+            availableOption: value,
+          },
+        };
+      },
+      {}
+    );
 
-      return {
-        ...acc,
-        [parsedKey.configurationKey] :{
-          priceType: parsedKey.priceType,
-          availableOption: value
-        }
+    const categoryId = JSON.parse(form.getFieldValue("categoryId"))._id;
+
+    const attributes = Object.entries(form.getFieldValue("attributes")).map(
+      ([key, value]) => {
+        return {
+          name: key,
+          value: value,
+        };
       }
-    },{})
-
-    const categoryId = JSON.parse(form.getFieldValue("categoryId"))._id
-
-    const attributes = Object.entries(form.getFieldValue("attributes")).map(([key, value])=>{
-       return {
-        name: key,
-        value: value
-       }
-    })
+    );
 
     const postData = {
       ...form.getFieldsValue(),
       image: form.getFieldValue("image"),
       isPublished: form.getFieldValue("isPublished") ? true : false,
       categoryId,
-      priceConfigiration: pricing,
-      attributes
-    }
+      priceConfiguration: pricing,
+      attributes,
+    };
 
-    const formData = makeFormData(postData)
-    productMutate(formData)
-  }
+    const formData = makeFormData(postData);
+    productMutate(formData);
+  };
 
   return (
     <>
@@ -224,7 +234,11 @@ const Products = () => {
 
         <Form form={filterForm} onFieldsChange={onFilterChange}>
           <ProductFilter>
-            <Button onClick={() => setDrawerOpen(true)} type="primary" icon={<PlusOutlined />}>
+            <Button
+              onClick={() => setDrawerOpen(true)}
+              type="primary"
+              icon={<PlusOutlined />}
+            >
               Add Product
             </Button>
           </ProductFilter>
