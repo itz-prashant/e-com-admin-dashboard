@@ -16,10 +16,11 @@ import type { Category, Tenant } from "../../../types";
 import Pricing from "./Pricing";
 import Attributes from "./Attributes";
 import ProductImage from "./ProductImage";
+import { useAuthStore } from "../../../store";
 
 const ProductForm = () => {
+  const {user} = useAuthStore()
   const selectedCategory = Form.useWatch("categoryId");
-
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -108,7 +109,7 @@ const ProductForm = () => {
             </Row>
           </Card>
 
-          <Card title="Tenant Info">
+         {user.role !== "manager" && <Card title="Tenant Info">
             <Row gutter={24}>
               <Col span={24}>
                 <Form.Item
@@ -135,7 +136,7 @@ const ProductForm = () => {
                 </Form.Item>
               </Col>
             </Row>
-          </Card>
+          </Card>}
 
           {selectedCategory && <Pricing selectedCategory={selectedCategory} />}
           {selectedCategory && (
