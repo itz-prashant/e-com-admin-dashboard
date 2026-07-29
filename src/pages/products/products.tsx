@@ -140,7 +140,7 @@ const Products = () => {
      })
 
     }
-  },[selectedProduct])
+  },[selectedProduct, form])
 
   const {
     data: products,
@@ -348,7 +348,7 @@ const Products = () => {
           }
         >
           <Form layout="vertical" form={form}>
-            <ProductForm />
+            <ProductForm form={form}/>
           </Form>
         </Drawer>
       </Space>
