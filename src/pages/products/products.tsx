@@ -27,7 +27,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createProduct, getProducts } from "../../http/api";
+import { createProduct, getProducts, updateProduct } from "../../http/api";
 import type { FieldData, Product } from "../../types";
 import { format } from "date-fns";
 import { debounce } from "lodash";
@@ -165,7 +165,11 @@ const Products = () => {
   const { mutate: productMutate, isPending} = useMutation({
     mutationKey: ["create-product"],
     mutationFn: async (data: FormData) => {
-      createProduct(data).then((res) => res.data);
+      if(selectedProduct){
+        return updateProduct(selectedProduct._id,data).then((res) => res.data);
+      }else{
+       return createProduct(data).then((res) => res.data);
+      }
     },
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -224,7 +228,7 @@ const Products = () => {
       {}
     );
 
-    const categoryId = JSON.parse(form.getFieldValue("categoryId"))._id;
+    const categoryId = form.getFieldValue("categoryId");
 
     const attributes = Object.entries(form.getFieldValue("attributes")).map(
       ([key, value]) => {
@@ -237,7 +241,7 @@ const Products = () => {
 
     const postData = {
       ...form.getFieldsValue(),
-      tenantId: user!.role === "manager" ? user.tenant.id : form.getFieldValue("tenandId") ,
+      tenantId: user!.role === "manager" ? user.tenant.id : form.getFieldValue("tenantId") ,
       image: form.getFieldValue("image"),
       isPublished: form.getFieldValue("isPublished") ? true : false,
       categoryId,
@@ -322,12 +326,13 @@ const Products = () => {
         />
 
         <Drawer
-          title={"Add product"}
+          title={selectedProduct ? "Update Product" :  "Add product"}
           size={720}
           styles={{ body: { background: colorBgLayout } }}
           destroyOnHidden={true}
           open={drawerOpen}
           onClose={() => {
+            setCurrentProduct(null)
             form.resetFields();
             setDrawerOpen(false);
           }}
@@ -335,8 +340,9 @@ const Products = () => {
             <Space>
               <Button
                 onClick={() => {
-                  setDrawerOpen(false);
+                  setCurrentProduct(null)
                   form.resetFields();
+                  setDrawerOpen(false);
                 }}
               >
                 Cancel
