@@ -20,7 +20,7 @@ import {
 } from "@ant-design/icons";
 import ProductFilter from "./ProductFilter";
 import { PER_PAGE } from "../../constants";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   keepPreviousData,
   useMutation,
@@ -93,6 +93,8 @@ const Products = () => {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  const [ selectedProduct, setCurrentProduct] = useState<Product | null>(null)
+
   const [form] = Form.useForm();
 
   const queryClient = useQueryClient();
@@ -106,6 +108,39 @@ const Products = () => {
   const {
     token: { colorBgLayout },
   } = theme.useToken();
+
+
+  useEffect(()=>{
+    if (!selectedProduct) return;
+    if(selectedProduct){
+
+      const priceConfiguration = Object.entries(selectedProduct.priceConfiguration).reduce((acc,[key, value])=>{
+        const sytingiFiedKey = JSON.stringify({
+          configurationKey: key,
+          priceType: value.priceType
+        })
+        return{
+          ...acc,
+          [sytingiFiedKey] : value.availableOptions
+        }
+      },{})
+
+     const attributes = selectedProduct.attributes.reduce((acc, item)=>{
+      return{
+        ...acc,
+        [item.name]: item.value
+      }
+     },{})
+
+     form.setFieldsValue({
+      ...selectedProduct,
+      priceConfiguration,
+      attributes,
+      categoryId: selectedProduct.category._id
+     })
+
+    }
+  },[selectedProduct])
 
   const {
     data: products,
@@ -269,10 +304,13 @@ const Products = () => {
               title: "Action",
               dataIndex: "action",
               key: "action",
-              render: () => {
+              render: (_, record: Product ) => {
                 return (
                   <Space>
-                    <Button onClick={() => {}} type="link">
+                    <Button onClick={() => {
+                      setDrawerOpen(true);
+                      setCurrentProduct(record)}
+                      } type="link">
                       Edit
                     </Button>
                   </Space>

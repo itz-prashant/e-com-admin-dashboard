@@ -73,7 +73,7 @@ const ProductForm = () => {
                     placeholder={"Select category"}
                     style={{ width: "100%" }}
                     options={categories?.data.map((category: Category) => ({
-                      value: JSON.stringify(category),
+                      value: category._id,
                       label: category.name,
                     }))}
                   />
