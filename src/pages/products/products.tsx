@@ -221,7 +221,7 @@ const Products = () => {
             priceType: Array.isArray(parsedKey.priceType)
               ? parsedKey.priceType[0]
               : parsedKey.priceType,
-            availableOption: value,
+            availableOptions: value,
           },
         };
       },
