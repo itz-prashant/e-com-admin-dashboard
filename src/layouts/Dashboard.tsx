@@ -32,8 +32,13 @@ const getMenuItems = (role: string) => {
     },
     {
       key: "/products",
-      icon: <Icon component={BasketIcon} />,
+      icon: <Icon component={FoodIcon} />,
       label: <NavLink to={"/products"}>Products</NavLink>,
+    },
+    {
+      key: "/orders",
+      icon: <Icon component={BasketIcon} />,
+      label: <NavLink to={"/promos"}>Orders</NavLink>,
     },
     {
       key: "/promos",
@@ -58,7 +63,7 @@ const getMenuItems = (role: string) => {
     return menus;
   }
 
-  return baseItems
+  return baseItems;
 };
 
 const Dashboard = () => {
@@ -92,6 +97,8 @@ const Dashboard = () => {
   const items = getMenuItems(user.role);
 
   const currentYear = new Date().getFullYear();
+
+  console.log("user", user);
 
   return (
     <div>

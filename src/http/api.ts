@@ -3,6 +3,7 @@ import { api } from "./client";
 
 export const AUTH_SERVICE = "/api/auth"
 const CATALOG_SERVICE= "/api/catalog"
+const ORDER_SERVICE= "/api/order"
 
 export const login = (credentials: Credentials)=> api.post(`${AUTH_SERVICE}/auth/login`, credentials)
 
@@ -34,3 +35,5 @@ export const getCategory = (categoryId:string)=>api.get(`${CATALOG_SERVICE}/cate
 export const updateProduct=(productId:string, product:FormData)=>api.put(`${CATALOG_SERVICE}/products/${productId}`, product, {
     headers: {"Content-Type": "multipart/form-data"}
 })
+
+export const getOrders = (queryString:string)=>api.get(`${ORDER_SERVICE}/orders?${queryString}`)
