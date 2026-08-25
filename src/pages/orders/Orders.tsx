@@ -4,6 +4,8 @@ import { RightOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { getOrders } from "../../http/api";
 import { format } from "date-fns";
+import { colorMapping } from "../../constants";
+import { capitalizeFirst } from "../products/helper";
 
 const columns = [
   {
@@ -56,7 +58,7 @@ const columns = [
     dataIndex: "orderStatus",
     key: "orderStatus",
     render: (_text: string, record) => {
-      return <Tag>{record.orderStatus.toUpperCase()}</Tag>;
+      return <Tag bordered={false} color={colorMapping[record.orderStatus]} >{capitalizeFirst(record.orderStatus)}</Tag>;
     },
   },
   {
