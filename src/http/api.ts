@@ -37,3 +37,4 @@ export const updateProduct=(productId:string, product:FormData)=>api.put(`${CATA
 })
 
 export const getOrders = (queryString:string)=>api.get(`${ORDER_SERVICE}/orders?${queryString}`)
+export const getSingleOrder = (orderId: string,queryString:string)=>api.get(`${ORDER_SERVICE}/orders/${orderId}?${queryString}`)
