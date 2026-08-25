@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getSingleOrder } from "../../http/api";
 import { colorMapping } from "../../constants";
 import type { Order } from "../../types";
+import { format } from "date-fns";
 
 const SingleOrder = () => {
   const params = useParams();
@@ -26,7 +27,7 @@ const SingleOrder = () => {
     queryFn: () => {
       const queryString = new URLSearchParams({
         fileds:
-          "cart,address, paymentMode,tenantId,total,comment,orderStatus,paymentStatus",
+          "cart,address, paymentMode,tenantId,total,comment,orderStatus,paymentStatus,createdAt"
       }).toString();
       return getSingleOrder(orderId, queryString).then((res) => res.data);
     },
@@ -89,7 +90,52 @@ const SingleOrder = () => {
           </Card>
         </Col>
         <Col span={10}>
-          <Card title="Order Details">Customer detail</Card>
+          <Card title="Order Details">
+            <Space vertical>
+              <Flex style={{ flexDirection: "column" }}>
+                <Typography.Text type="secondary">Name</Typography.Text>
+                <Typography.Text>
+                  {order.customerId.firstName + " " + order.customerId.lastName}
+                </Typography.Text>
+              </Flex>
+              <Flex style={{ flexDirection: "column" }}>
+                <Typography.Text type="secondary">Address</Typography.Text>
+                <Typography.Text>
+                  {order.address}
+                </Typography.Text>
+              </Flex>
+              <Flex style={{ flexDirection: "column" }}>
+                <Typography.Text type="secondary">Payment Mode</Typography.Text>
+                <Typography.Text>
+                  {order.paymentMode.toUpperCase()}
+                </Typography.Text>
+              </Flex>
+              <Flex style={{ flexDirection: "column" }}>
+                <Typography.Text type="secondary">Payment Status</Typography.Text>
+                <Typography.Text>
+                  {capitalizeFirst(order.paymentStatus)}
+                </Typography.Text>
+              </Flex>
+              <Flex style={{ flexDirection: "column" }}>
+                <Typography.Text type="secondary">Order Amount</Typography.Text>
+                <Typography.Text>
+                  ₹{order.total}
+                </Typography.Text>
+              </Flex>
+              <Flex style={{ flexDirection: "column" }}>
+                <Typography.Text type="secondary">Order time</Typography.Text>
+                <Typography.Text>
+                   {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm")}
+                </Typography.Text>
+              </Flex>
+              {order.comment && <Flex style={{ flexDirection: "column" }}>
+                <Typography.Text type="secondary">Order time</Typography.Text>
+                <Typography.Text>
+                   {order.comment}
+                </Typography.Text>
+              </Flex>}
+            </Space>
+          </Card>
         </Col>
       </Row>
     </Space>
