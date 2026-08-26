@@ -1,4 +1,4 @@
-import type { createTenantData, CreateUserData, Credentials } from "../types";
+import type { createTenantData, CreateUserData, Credentials, OrderStatus } from "../types";
 import { api } from "./client";
 
 export const AUTH_SERVICE = "/api/auth"
@@ -38,3 +38,4 @@ export const updateProduct=(productId:string, product:FormData)=>api.put(`${CATA
 
 export const getOrders = (queryString:string)=>api.get(`${ORDER_SERVICE}/orders?${queryString}`)
 export const getSingleOrder = (orderId: string,queryString:string)=>api.get(`${ORDER_SERVICE}/orders/${orderId}?${queryString}`)
+export const chanegStatus = (orderId: string, data:{status : OrderStatus})=>api.patch(`${ORDER_SERVICE}/orders/change-status/${orderId}`, data)

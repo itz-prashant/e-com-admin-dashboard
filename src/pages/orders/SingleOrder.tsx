@@ -6,6 +6,7 @@ import {
   Flex,
   List,
   Row,
+  Select,
   Space,
   Tag,
   Typography,
@@ -13,25 +14,64 @@ import {
 import { Link, useParams } from "react-router-dom";
 import { RightOutlined } from "@ant-design/icons";
 import { capitalizeFirst } from "../products/helper";
-import { useQuery } from "@tanstack/react-query";
-import { getSingleOrder } from "../../http/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { chanegStatus, getSingleOrder } from "../../http/api";
 import { colorMapping } from "../../constants";
-import type { Order } from "../../types";
+import type { Order, OrderStatus } from "../../types";
 import { format } from "date-fns";
 
+const orderStatusOptions = [
+  {
+    value: "received",
+    label: "Received",
+  },
+  {
+    value: "confirmed",
+    label: "Confirmed",
+  },
+  {
+    value: "prepared",
+    label: "Prepared",
+  },
+  {
+    value: "out_for_delivery",
+    label: "Out Dor Delivery",
+  },
+  {
+    value: "delivered",
+    label: "Delivered",
+  },
+];
+
 const SingleOrder = () => {
+  const queryclient = useQueryClient()
   const params = useParams();
   const orderId = params.orderId;
   const { data: order } = useQuery<Order>({
     queryKey: ["order", orderId],
     queryFn: () => {
       const queryString = new URLSearchParams({
-        fileds:
-          "cart,address, paymentMode,tenantId,total,comment,orderStatus,paymentStatus,createdAt"
+        fields:
+          "cart,address,paymentMode,tenantId,total,comment,orderStatus,paymentStatus,createdAt",
       }).toString();
       return getSingleOrder(orderId, queryString).then((res) => res.data);
     },
   });
+
+  const {mutate} = useMutation({
+      mutationKey: ["order", orderId],
+      mutationFn :(status: OrderStatus)=>{
+        return chanegStatus(orderId as string, {status}).then(res => res.data)
+      },
+      onSuccess:()=>{
+        queryclient.invalidateQueries({ queryKey: ["order", orderId]})
+      }
+    })
+
+  const handleStatusChange = (status:OrderStatus)=>{
+    mutate(status)
+  }
+
   if (!order) {
     return;
   }
@@ -46,6 +86,15 @@ const SingleOrder = () => {
             { title: `Order - #${order?._id}` },
           ]}
         />
+        <Space>
+          <Typography.Text>Change order status</Typography.Text>
+          <Select
+            defaultValue={order.orderStatus}
+            style={{ width: 150 }}
+            onChange={handleStatusChange}
+            options={orderStatusOptions}
+          />
+        </Space>
       </Flex>
 
       <Row gutter={24}>
@@ -100,9 +149,7 @@ const SingleOrder = () => {
               </Flex>
               <Flex style={{ flexDirection: "column" }}>
                 <Typography.Text type="secondary">Address</Typography.Text>
-                <Typography.Text>
-                  {order.address}
-                </Typography.Text>
+                <Typography.Text>{order.address}</Typography.Text>
               </Flex>
               <Flex style={{ flexDirection: "column" }}>
                 <Typography.Text type="secondary">Payment Mode</Typography.Text>
@@ -111,29 +158,29 @@ const SingleOrder = () => {
                 </Typography.Text>
               </Flex>
               <Flex style={{ flexDirection: "column" }}>
-                <Typography.Text type="secondary">Payment Status</Typography.Text>
+                <Typography.Text type="secondary">
+                  Payment Status
+                </Typography.Text>
                 <Typography.Text>
                   {capitalizeFirst(order.paymentStatus)}
                 </Typography.Text>
               </Flex>
               <Flex style={{ flexDirection: "column" }}>
                 <Typography.Text type="secondary">Order Amount</Typography.Text>
-                <Typography.Text>
-                  ₹{order.total}
-                </Typography.Text>
+                <Typography.Text>₹{order.total}</Typography.Text>
               </Flex>
               <Flex style={{ flexDirection: "column" }}>
                 <Typography.Text type="secondary">Order time</Typography.Text>
                 <Typography.Text>
-                   {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm")}
+                  {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm")}
                 </Typography.Text>
               </Flex>
-              {order.comment && <Flex style={{ flexDirection: "column" }}>
-                <Typography.Text type="secondary">Order time</Typography.Text>
-                <Typography.Text>
-                   {order.comment}
-                </Typography.Text>
-              </Flex>}
+              {order.comment && (
+                <Flex style={{ flexDirection: "column" }}>
+                  <Typography.Text type="secondary">Order time</Typography.Text>
+                  <Typography.Text>{order.comment}</Typography.Text>
+                </Flex>
+              )}
             </Space>
           </Card>
         </Col>
