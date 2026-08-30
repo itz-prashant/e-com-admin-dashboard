@@ -6,6 +6,9 @@ import { getOrders } from "../../http/api";
 import { format } from "date-fns";
 import { colorMapping } from "../../constants";
 import { capitalizeFirst } from "../products/helper";
+import { useEffect } from "react";
+import socket from "../../lib/socket";
+import { useAuthStore } from "../../store";
 
 const columns = [
   {
@@ -58,7 +61,11 @@ const columns = [
     dataIndex: "orderStatus",
     key: "orderStatus",
     render: (_text: string, record) => {
-      return <Tag bordered={false} color={colorMapping[record.orderStatus]} >{capitalizeFirst(record.orderStatus)}</Tag>;
+      return (
+        <Tag bordered={false} color={colorMapping[record.orderStatus]}>
+          {capitalizeFirst(record.orderStatus)}
+        </Tag>
+      );
     },
   },
   {
@@ -91,6 +98,28 @@ const columns = [
 
 const TENANT_ID = 7;
 const Orders = () => {
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    if (user?.tenant) {
+      socket.on("order-update", (data)=>{
+        console.log("data received", data)
+      })
+
+      socket.on("join", (data)=>{
+        console.log("user joined in:", data.roomId)
+      })
+      socket.emit("join", {
+        tenantId: user.tenant.id,
+      });
+    }
+
+    return ()=>{
+      socket.off("join")
+      socket.off("order-update")
+    }
+  }, []);
+
   const { data: orders } = useQuery({
     queryKey: ["order"],
     queryFn: async () => {
