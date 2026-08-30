@@ -1,7 +1,7 @@
-import { Breadcrumb, Flex, Space, Table, Tag, Typography } from "antd";
+import { Breadcrumb, Flex, message, Space, Table, Tag, Typography } from "antd";
 import { Link } from "react-router-dom";
 import { RightOutlined } from "@ant-design/icons";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getOrders } from "../../http/api";
 import { format } from "date-fns";
 import { colorMapping } from "../../constants";
@@ -9,6 +9,12 @@ import { capitalizeFirst } from "../products/helper";
 import { useEffect } from "react";
 import socket from "../../lib/socket";
 import { useAuthStore } from "../../store";
+import {
+  OrderEvents,
+  PaymentMode,
+  PaymentStatus,
+  type Order,
+} from "../../types";
 
 const columns = [
   {
@@ -99,25 +105,43 @@ const columns = [
 const TENANT_ID = 7;
 const Orders = () => {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  const [messageApi, contextHolder] = message.useMessage()
 
   useEffect(() => {
     if (user?.tenant) {
-      socket.on("order-update", (data)=>{
-        console.log("data received", data)
-      })
+      socket.on("order-update", (data) => {
+        console.log("data received", data);
+        if (
+          (data.event_type === OrderEvents.ORDER_CREATE &&
+            data.data.paymentMode === PaymentMode.CASH) ||
+          (data.event_type === OrderEvents.PAYMENT_STATUS_UPDATE &&
+            data.data.paymentStatus === PaymentStatus.PAID && PaymentMode.CARD)
+        ) {
+          queryClient.setQueryData(["order"], (old: Order[]) => [
+            data.data,
+            ...old,
+          ]);
+          messageApi.open({
+            type:"success",
+            content: "New order received"
+          })
+        }
+      });
 
-      socket.on("join", (data)=>{
-        console.log("user joined in:", data.roomId)
-      })
+      socket.on("join", (data) => {
+        console.log("user joined in:", data.roomId);
+      });
       socket.emit("join", {
         tenantId: user.tenant.id,
       });
     }
 
-    return ()=>{
-      socket.off("join")
-      socket.off("order-update")
-    }
+    return () => {
+      socket.off("join");
+      socket.off("order-update");
+    };
   }, []);
 
   const { data: orders } = useQuery({
@@ -131,6 +155,8 @@ const Orders = () => {
     },
   });
   return (
+    <>
+    {contextHolder}
     <Space style={{ width: "100%" }} size={"large"} vertical>
       <Flex justify="space-between">
         <Breadcrumb
@@ -144,6 +170,7 @@ const Orders = () => {
 
       <Table columns={columns} rowKey={"_id"} dataSource={orders} />
     </Space>
+    </>
   );
 };
 
